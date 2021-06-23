@@ -79,4 +79,4 @@ git clone https://github.com/kunalg123/vsdflow.git
 git clone https://github.com/kunalg123/sky130RTLDesignAndSynthesisWorkshop.git
 ```
 
-![files after cloning](images/Day1/1-1)
+![files after cloning](images/Day1/1-1.png)
