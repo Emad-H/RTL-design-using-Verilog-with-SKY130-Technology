@@ -13,6 +13,7 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Introduction to Yosys](#introduction-to-yosys)
   * [Libraries and their Significance](#libraries-and-their-significance)
   * [Exploring Yosys and SKY130PDKs](#exploring-yosys-and-sky130pdks)
+- [Day 2 - Timing libs, Hierarchical vs. Flat Synthesis and Efficient Flop Coding Styles](#day-2---timing-libs,-hierarchical-vs.-flat-synthesis-and-efficient-flop-coding-styles)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -191,4 +192,4 @@ Finally, we can write the netlist using the command ```write_verilog -noattr fil
 
 ![netlist](images/Day1/1-15.png)
 
-## Day 2
+## Day 2 - Timing libs, Hierarchical vs. Flat Synthesis and Efficient Flop Coding Styles
