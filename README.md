@@ -97,11 +97,11 @@ For lab sessions, the following verilog design files and testbench models of som
 
 To understand how to use these tools, lets explore Iverilog and GTKWave using an example of a simple 2:1 Multiplexer from the provided verilog_files directory. Let us take a look at the source verilog code for the design and testbench files, labeled as good_mux.v and tb_good_mux.v respectively.
 
-![good_mux.v](images/Day1/1-7.png)
-*Fig. Verilog code for 2:1 Multiplexer Design*
+![good_mux.v](images/Day1/1-7.png)<br>
+*Fig.: Verilog code for 2:1 Multiplexer Design*
 
-![tb_good_mux.v](images/Day1/1-6.png)
-*Fig. Verilog code for 2:1 Multiplexer Testbench*
+![tb_good_mux.v](images/Day1/1-6.png)<br>
+*Fig.: Testbench for 2:1 Multiplexer*
 
 To simulate these files in Iverilog, the following command can be used.
 
@@ -131,13 +131,13 @@ Finally, in the GTKWave interface panel, we can add the unit under test and sele
 
 Yosys is a framework for Verilog RTL synthesis. A synthesizer is a tool used for converting RTL based verilog code to netlist. RTL is the behavioural representation of the required specification in Verilog HDL. Netlist is the representation of the design in the form of standard cells present in the library. The Yosys synthesizer flow is as follows.
 
-![yosys flow](images/Day1/1-8.png)
+<img src="images/Day1/1-8.png" width="70%">
 
-<!-- Yosys makes use of the commands ```read_verilog``` to read the verilog design, ```read_liberty``` to read the .lib, and ```write_verilog``` to write the netlist file. <br> -->
+Yosys makes use of the commands ```read_verilog``` to read the verilog design, ```read_liberty``` to read the .lib, and ```write_verilog``` to write the netlist file. <br>
 
 To verify the synthesis output, we can follow the same procedure as we did when verifying verilog design as the netlist must obey the same specifications as the original RTL design. In order to do this, we can pass the netlist file along with the original RTL testbench to our simulator and generate the VCD file. This VCD file can be viewed in the waveform viewer to confirm the behaviour of the synthesized netlist. This is shown below.
 
-![yosys verification](images/Day1/1-9.png)
+<img src="images/Day1/1-9.png" width="70%">
 
 ### Libraries and their Significance
 
@@ -189,6 +189,6 @@ As visible in the report, yosys has found 3 inputs, 1 ouptut and 0 internal conn
 
 Finally, we can write the netlist using the command ```write_verilog -noattr filename.v```. Here, the property "-noattr" is used to prevent yosys from dumping extra information in the final netlist file. Let's name our file as good_mux_netlist.v and execute the command. The final netlist represention is shown below.
 
-!![netlist](images/Day1/1-15.png)
+![netlist](images/Day1/1-15.png)
 
 ## Day 2
