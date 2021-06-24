@@ -14,6 +14,9 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Libraries and their Significance](#libraries-and-their-significance)
   * [Exploring Yosys and SKY130PDKs](#exploring-yosys-and-sky130pdks)
 - [Day 2 - Timing libs, Hierarchical vs. Flat Synthesis and Efficient Flop Coding Styles](#day-2---timing-libs-hierarchical-vs-flat-synthesis-and-efficient-flop-coding-styles)
+  * [Further Information on .lib](#further-information-on-lib)
+  * [Hierarchical vs. Flat Synthesis](#hierarchical-vs-flat-synthesis)
+  * [Flop Coding Styles and Optimisations](#flop-coding-styles-and-optimisations)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -193,3 +196,77 @@ Finally, we can write the netlist using the command ```write_verilog -noattr fil
 ![netlist](images/Day1/1-15.png)
 
 ## Day 2 - Timing libs, Hierarchical vs. Flat Synthesis and Efficient Flop Coding Styles
+
+### Further Information on .lib
+
+The SKY130 library file used for this workshop is sky130_fd_sc_hd_tt_025C_1v80.lib
+
+Here, <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**fd** is SkyWater Foundry <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**sc** is Standard Cell <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**hd** is High Density <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**tt** is Typical Process <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**025C** is 25°C operating Temperature <br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**1v80** is 1.8V operating Voltage <br>
+
+Below is some of the contents of this .lib file.
+
+![lib file](images/Day2/1-0.png)
+
+Here, you can see that the library provides details like technology (CMOS), power parameters, voltage parameters, current draw, area, timings and delays, etc. This file hold information on every standard cell provided in the library, along with all its flavours. Let's compare the flavours of a basic OR gate.
+
+![or gate](images/Day2/1-1.png)
+
+From the above image it is evident that each iteration of the OR gate has different power and area consumptions. Larger are and power values are due to wider transistors which are required in faster designs. Hence, in the above case, or2_4 is the faster cell and or2_0 is the slower cell.
+
+### Hierarchical vs. Flat Synthesis
+
+When synthesizing a design containing multiple modules, the notion of heirarchical vs. flat design comes up. To understand their differrences, let's compare the two using an example. Below is a design that instantiates two low level modules, namely an OR gate (sub module u2) and an AND gate (sub module u1). This file is available under the verilog_files directory as multiple_modules.v
+
+![multiple modules](images/Day2/1-2.png)
+
+Now, let us synthesize this in Yosys with the following commands.
+```
+yosys
+read_liberty -lib .../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+read_verilog multiple_modules.v
+synth -top multiple modules
+abc -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+```
+![heir synth](images/Day2/1-3.png)
+
+If we see the graphical view of the realisation using the command ```show multiple_modules```, we can notice that the actual OR and AND gates are not visible but only the sub modules u1 and u2 are shown. This is known as Heirarchical Synthesis as the heirarchies are preserved. This is shown below.
+
+![heir image](images/Day2/1-4.png)
+
+If we generate the netlist using ```write_verilog -noattr multiple_modules_h_netlist.v```, we see a similar story. The heirarchies are preserved, as there is one instantiation of each sub module under multiple_modules. The netlist is shown below.
+
+![heir netlist](images/Day2/1-5.png)
+
+To avoid heirarchical synthesis, we can use the command ```flatten``` in the yosys prompt. Now, we can generate the netlist again using the command ```write_verilog -noattr multiple_modules_f_netlist.v```. This is shown in the image below.
+
+![flatten yosys](images/Day2/1-6.png)
+
+The netlist generated here does not contain instantiations of sub modules or any heirarchical structure. It directly contains one module with mutiple standard cells. This is known as Flat Synthesis. Its netlist is shown below.
+
+![flat netlist](images/Day2/1-7.png)
+
+If we view it graphically using the ```show``` command, we can observe only standard cell implementations and no heirarchy present.
+
+![flat image](images/Day2/1-8.png)
+
+Note: From a multiple module design file, it is possible to just synthesize a single sub module. This is done using the command ```synth -top sub_module_name```, and is known as Sub Module level Synthesis. This is used when, 
+- we have multiple instances of the same module and just want to synthesize it once, then replicate it however many times.
+- we are using a divide and conquer approach (used in massive designs when the tool does not do an appropriate or well optmised job).
+
+### Flop Coding Styles and Optimisations
+
+In combinational circuits, each circuit element or cell experiences a time delay for the output to change based on a change in the input. This delay is known as Propogation Delay. Due to these propogation delays, the circuit might experience unwanted transitions in the output, espescially as the propagation delay stacks additively as the number of combinational circuits increase. These unwanted transitions are known as Glitches in the output. <br>
+
+To avoid glitches, we make use of D Flip-flops as storage elements or buffers in between the different combinational circuits. D flip-flops store the value present on their input, and its output changes only at clock edges. This brings stability between combinational circuits as the D flip-flops shield the combinational circuit they are feeding against glitches in their input, allowing the output of that combinational circuit to settle down. <br>
+
+Flip-flops come in various types. These are mainly:
+- Synchronous vs. Asynchronous set
+- Synchronous vs. Asynchronous reset
+- Rising (positive) edge triggered vs. Falling (negative) edge triggered
+
