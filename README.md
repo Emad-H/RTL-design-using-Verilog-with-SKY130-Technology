@@ -248,7 +248,7 @@ If we generate the netlist using ```write_verilog -noattr multiple_modules_h_net
 
 ![heir netlist](images/Day2/1-5.png)
 
-To avoid heirarchical synthesis, we can use the command ```flatten``` in the yosys prompt. Now, we can generate the netlist again using the command ```write_verilog -noattr multiple_modules_f_netlist.v```. This is shown in the image below.
+To avoid heirarchical synthesis, we can use the command ```flatten``` in the yosys prompt after the ```synth``` command. Now, we can generate the netlist again using the command ```write_verilog -noattr multiple_modules_f_netlist.v```. This is shown in the image below.
 
 ![flatten yosys](images/Day2/1-6.png)
 
