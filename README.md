@@ -16,7 +16,12 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
 - [Day 2 - Timing libs, Hierarchical vs. Flat Synthesis and Efficient Flop Coding Styles](#day-2---timing-libs-hierarchical-vs-flat-synthesis-and-efficient-flop-coding-styles)
   * [Further Information on .lib](#further-information-on-lib)
   * [Hierarchical vs. Flat Synthesis](#hierarchical-vs-flat-synthesis)
-  * [Flop Coding Styles and Optimisations](#flop-coding-styles-and-optimisations)
+  * [Flop Coding Styles](#flop-coding-styles)
+  * [Some Interesting Optimisations for Special Cases](#some-interesting-optimisations-for-special-cases)
+- [Day 3 - Combinational and Seqeuntial Optimisations](#day-3---combinational-and-seqeuntial-optimisations)
+  * [Introduction to Logic Optimisations](#introduction-to-logic-optimisations)
+  * [Combinational Logic Optimisations](#combinational-logic-optimisations)
+  * [Sequential Logic Optimisations](#sequential-logic-optimisations)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -259,7 +264,7 @@ Note: From a multiple module design file, it is possible to just synthesize a si
 - we have multiple instances of the same module and just want to synthesize it once, then replicate it however many times.
 - we are using a divide and conquer approach (used in massive designs when the tool does not do an appropriate or well optmised job).
 
-### Flop Coding Styles and Optimisations
+### Flop Coding Styles
 
 In combinational circuits, each circuit element or cell experiences a time delay for the output to change based on a change in the input. This delay is known as Propogation Delay. Due to these propogation delays, the circuit might experience unwanted transitions in the output, espescially as the propagation delay stacks additively as the number of combinational circuits increase. These unwanted transitions are known as Glitches in the output. <br>
 
@@ -270,3 +275,396 @@ Flip-flops come in various types. These are mainly:
 - Synchronous vs. Asynchronous reset
 - Rising (positive) edge triggered vs. Falling (negative) edge triggered
 
+To further understand understand the different flop styles, let's look at 3 D flip-flops available to us in the directory verilog_files.
+
+Note: For synthesizing designs involving D flip-flops in Yosys, we must use the command ```dfflibmap -liberty dff_library_filepath``` which in our case is ```dfflibmap -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib```. This command is used to read the dff standard cells as some libraries may have seperate .lib files for these. The command must be issues after ```synth``` and before ```abc```.
+
+**1. Rising edge D Flip-flop with asynchronous reset**
+
+```
+module dff_asyncres ( input clk ,  input async_reset , input d , output reg q );
+always @ (posedge clk , posedge async_reset)
+begin
+	if(async_reset)
+		q <= 1'b0;
+	else	
+		q <= d;
+end
+endmodule
+```
+*Verilog code for dff_asyncres**
+
+![asyncres wave](images/Day2/1-9.png) <br>
+*Waveform for dff_asyncres*
+
+![asyncres img](images/Day2/1-12.png) <br>
+*Graphical representation of synthesized netlist for dff_asyncres*
+
+**2. Rising edge D Flip-flop with asynchronous set**
+
+```verilog
+module dff_async_set ( input clk ,  input async_set , input d , output reg q );
+always @ (posedge clk , posedge async_set)
+begin
+	if(async_set)
+		q <= 1'b1;
+	else	
+		q <= d;
+end
+endmodule
+```
+*Verilog code for dff_sync_set**
+
+![async_set wave](images/Day2/1-10.png) <br>
+*Waveform for dff_async_set*
+
+![async_set img](images/Day2/1-13.png) <br>
+*Graphical representation of synthesized netlist for dff_async_set*
+
+**3. Rising edge D Flip-flop with synchronous reset**
+
+```verilog
+module dff_syncres ( input clk , input async_reset , input sync_reset , input d , output reg q );
+always @ (posedge clk )
+begin
+	if (sync_reset)
+		q <= 1'b0;
+	else	
+		q <= d;
+end
+endmodule
+```
+*Verilog code for dff_syncres**
+
+![syncres wave](images/Day2/1-11.png) <br>
+*Waveform for dff_syncres*
+
+![syncres img](images/Day2/1-14.png) <br>
+*Graphical representation of synthesized netlist for dff_syncres*
+
+### Some Interesting Optimisations for Special Cases
+
+**Case 1:**
+
+Let's consider the following design where the 3 bit input is multiplied by 2 and the output is a 4 bit value.
+
+```verilog
+module mul2 (input [2:0] a, output [3:0] y);
+	assign y = a * 2;
+endmodule
+```
+
+If we take a look at its truth table, we can see the following.
+
+|a[2:0]|y[3:0]|
+|---|---|
+|000|0000|
+|001|0010|
+|010|0100|
+|011|0110|
+|100|1000|
+|101|1010|
+|110|1100|
+|111|1110|
+
+Here, the ouput y[3:0] is nothing but the input a[2:0] appended with a 0 at the LSB. Or, we can say that ```y = {a, 0}```. If we synthesize the netlist and look at its graphical realisation, we will see the same optimisation occuring in the netlist.
+
+![2x mul](images/Day2/1-15.png)
+
+**Case 2:**
+
+Let's consider the following design where the 3 bit input is multiplied by 9 and the output is a 6 bit value.
+
+```verilog
+module mult8 (input [2:0] a , output [5:0] y);
+	assign y = a * 9;
+endmodule
+```
+
+If we take a look at its truth table, we can see the following.
+
+|a[2:0]|y[5:0]|
+|---|---|
+|000|000000|
+|001|001001|
+|010|010010|
+|011|011011|
+|100|100100|
+|101|101101|
+|110|110110|
+|111|111111|
+
+Here, the ouput y[5:0] is nothing but the input a[2:0] appended with itself. Or, we can say that ```y = {a, a}```. If we synthesize the netlist and look at its graphical realisation, we will see the same optimisation occuring in the netlist.
+
+![9x mul](images/Day2/2-16.png)
+
+## Day 3 - Combinational and Seqeuntial Optimisations
+
+### Introduction to Logic Optimisations
+
+There are broadly two types of logic available, combinational and sequential. In order to save cost by reducing power and area consumptions of a design, we must optimise the design as best as possible. For each type of logic, there exist different methods of opimisation, as follows.
+
+**1. Combinational optimisation methods:**
+
+- Squeezing the logic for Area and Power savings
+- Constant Propogation
+  * Direct Optimisation
+- Boolean Logic Optimisation
+  * K-Map
+  * Quine-McKluskey Algorithm
+
+
+**2. Sequential optimisation methods:**
+
+- Basic
+  * Sequential Constant Propogation
+- Advanced
+  * State Optimisation
+  * Retiming
+  * Sequential Logic Cloning (Floor Plan Aware Synthesis)
+
+### Combinational Logic Optimisations
+
+Let's take a look at some examples of combinational optimisations using the files opt_check.v, opt_check2.v, opt_check3.v, opt_check4.v, and multiple_modules_opt.v. All of these files are under the verilog_files directory.
+
+**Example 1: opt_check.v**
+
+```verilog
+module opt_check (input a , input b , output y);
+	assign y = a?b:0;
+endmodule
+```
+Using boolean logic simplification, we can tell that y = ab. Let us synthesize this in yosys using the following commands.
+
+![yosys cmd](images/Day3/3-0.png)
+
+Before realising the netlist, we must issue a command to yosys to perform constant propogation and optimisations. this can be done using the ```opt_clean -purge``` command as follows.
+
+![yosys purge](images/Day3/3-1.png)
+
+After this step, we can continue as usual with ```abc -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib``` and ```write_verilog -noattr opt_check_netlist.v``` commands. If we view the graphical realisation witht the ```show``` command, we can see that Yosys has synthesized an AND gate as expected.
+
+![opt1 show](images/Day3/3-2.png)
+
+**Example 2: opt_check2.v**
+
+```verilog
+module opt_check2 (input a , input b , output y);
+	assign y = a?1:b;
+endmodule
+```
+
+Similar to the example 1, lets continue with optimisations for this design. Here we expect the output to be an OR gate based on boolean optimisation, since the output can be simplified to y = a + b. If we generate the netlist and look at its graphical realisation, we get the following.
+
+![opt2 show](images/Day3/3-3.png)
+
+Here, we expected an OR gate but got an iso low power cell instead. This is due to certain Yosys optimisations, however it functions the same.
+
+**Example 3: opt_check3.v**
+
+```verilog
+module opt_check3 (input a , input b, input c , output y);
+	assign y = a?(c?b:0):0;
+endmodule
+```
+
+For this design, we expect the output to be a 3 input AND gate based on boolean optimisation, as the output can be simplified to y = abc. If we generate the netlist and look at its graphical realisation, we get the following.
+
+![opt3 show](images/Day3/3-4.png)
+
+As we can see, Yosys synthesizes a 3 input AND after optimisations as expected.
+
+**Example 4: opt_check4.v**
+
+```verilog
+module opt_check4 (input a , input b , input c , output y);
+	assign y = a?(b?(a & c):c):(!c);
+endmodule
+```
+
+For this design, after boolean logic optimisation we can conclude that the output can be simplified to a single xnor gate with the output equation y = a⊙c. If we generate the netlist and look at its graphical realisation, we get the following.
+
+![opt4 show](images/Day3/3-5.png)
+
+We get the same result after the Yosys synthesis as we expected from the optimisation.
+
+**Example 5: multiple_module_opt.v**
+
+```verilog
+module sub_module1(input a , input b , output y);
+	assign y = a & b;
+endmodule
+
+module sub_module2(input a , input b , output y);
+	assign y = a^b;
+endmodule
+
+module multiple_module_opt(input a , input b , input c , input d , output y);
+wire n1, n2, n3;
+
+sub_module1 U1 (.a(a), .b(1'b1), .y(n1));
+sub_module2 U2 (.a(n1), .b(1'b0), .y(n2));
+sub_module2 U3 (.a(b), .b(d), .y(n3));
+
+assign y = c | (b & n1); 
+
+endmodule
+```
+
+To optimise this design, we must use Flat Synthesis as otherwise the optimisations will not be performed on the sub module level. Thus, we must use the ```flatten``` command.
+
+![multopt show](images/Day3/3-6.png)
+
+Once the optimisations are conducted by Yosys, we can observe that we only need a single standard cell to realise a design that originally contained multiple modules.
+
+### Sequential Logic Optimisations
+
+Let's take a look at some examples of sequential optimisations using sequential constant propogation. We shall be using the files dff_const1.v, dff_const2.v, dff_const3.v, dff_const4.v, and dff_const5.v. All of these files are under the verilog_files directory.
+
+**Example 1: dff_const1.v**
+
+```verilog
+module dff_const1(input clk, input reset, output reg q);
+always @(posedge clk, posedge reset)
+begin
+	if(reset)
+		q <= 1'b0;
+	else
+		q <= 1'b1;
+end
+endmodule
+```
+
+At first glance, it may seem that the output bit q should be equal to an inverted reset or !reset. However, as the reset is synchronous, so the output depends on both the reset and clk edge. This can be confirmed by simulating the design in Iverilog, and viewing the VCD with GTKWave as follows.
+
+![dff1 sim](images/Day3/3-7.png)
+
+![dff1 wave](images/Day3/3-8.png)
+
+If we observe the waveform above, when reset becomes 0, q only becomes 1 at the next clock edge. Hence, we do not get a sequential constant, and no optimisations should be possible here. Let's confirm the same using Yosys synthesis and optimisation as follows.
+
+![dff1 cmd](images/Day3/3-9.png)
+
+We must use the command ```dfflibmap -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib``` as our design includes D flip-flops. We can then generate the netlist using ```abc -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib``` and ```write_verilog -noattr dff_const1_netlist.v```. To view the graphical realisation, we use the ```show``` command.
+
+![dff1 show](images/Day3/3-10.png)
+
+As you can see, no optimisations can be conducted on this design.
+
+**Example 2: dff_const2.v**
+
+```verilog
+module dff_const2(input clk, input reset, output reg q);
+always @(posedge clk, posedge reset)
+begin
+	if(reset)
+		q <= 1'b1;
+	else
+		q <= 1'b1;
+end
+endmodule
+```
+
+Here, we can see that regardless of the inputs, the ouput q always remains constant at 1. This can be observed in the waveform viewer as well.
+
+![dff2 wave](images/Day3/3-11.png)
+
+As the output is always constant, it can easily be opitmised using Yosys as below.
+
+![dff2 show](images/Day3/3-15.png)
+
+**Example 3: dff_const3.v**
+
+```verilog
+module dff_const3(input clk, input reset, output reg q);
+reg q1;
+
+always @(posedge clk, posedge reset)
+begin
+	if(reset)
+	begin
+		q <= 1'b1;
+		q1 <= 1'b0;
+	end
+	else
+	begin
+		q1 <= 1'b1;
+		q <= q1;
+	end
+end
+endmodule
+```
+
+Here, we might think that the output q should always be constant at the value 1. For an ideal circuit, this may be true. When reset is 0 then q1 should be 1, making the output q to be 1 as well. But when we consider the propogation delay time of D flip-flop q1, the output of q1 = 1 will not be present exactly at th clock edge. Thus, q takes the value 0 until the next clock edge whne it read an input of 1 from q1. This is confirmed with the simulated waveform below.
+
+![dff3 wave](images/Day3/3-12.png)
+
+Hence, both the flip-flops are needed and no optimisation can be conducted on this particular design. We can confirm this using Yosys as shown below.
+
+![dff3 show](images/Day3/3-16.png)
+
+As you can see, both the D flip-flops are present in the synthesized netlist.
+
+**Example 4: dff_const4.v**
+
+```verilog
+module dff_const4(input clk, input reset, output reg q);
+reg q1;
+
+always @(posedge clk, posedge reset)
+begin
+	if(reset)
+	begin
+		q <= 1'b1;
+		q1 <= 1'b1;
+	end
+	else
+	begin
+		q1 <= 1'b1;
+		q <= q1;
+	end
+end
+endmodule
+```
+
+Here, we can see that regardless of the reset input, q1 is always going to be constant at 1. As q can only be 1 or q1 depending on the reset input, but q1 = 1. Thus q is also constant at the value 1. We can confirm this with the simulated waveforms as shown below.
+
+![dff4 wave](images/Day3/3-13.png)
+
+As the output is always constant, it can easily be opitmised using Yosys as shown in the graphical realisation below.
+
+![dff4 show](images/Day3/3-17.png)
+
+Using optimisation, Yosys has concurred that no D flip-flops are required in the netlist.
+
+**Example 5: dff_const5.v**
+
+```verilog
+module dff_const5(input clk, input reset, output reg q);
+reg q1;
+
+always @(posedge clk, posedge reset)
+begin
+	if(reset)
+	begin
+		q <= 1'b0;
+		q1 <= 1'b0;
+	end
+	else
+	begin
+		q1 <= 1'b1;
+		q <= q1;
+	end
+end
+endmodule
+```
+
+Again, we might expect this design to be easily optimised as q = !reset. However as the design uses a synchronous reset, as well as due to propogation delay time of D flip-flop q1 (similar to example 3), we cannot replace the flip-flops. Hence, we do not get sequential constants. This can be viewed in the simulated waveforms as well.
+
+![dff5 wave](images/Day3/3-14.png)
+
+Since both D flip-flops cannot be replaced, no optimisation should be possible in this design. Let's look at the Yosys graphical realisation for this file.
+
+![dff5 show](images/Day3/3-18.png)
+
+As expected, no optimisations could be conducted by Yosys.
