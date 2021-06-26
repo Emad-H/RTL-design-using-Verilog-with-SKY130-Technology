@@ -22,7 +22,7 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Introduction to Logic Optimisations](#introduction-to-logic-optimisations)
   * [Combinational Logic Optimisations](#combinational-logic-optimisations)
   * [Sequential Logic Optimisations](#sequential-logic-optimisations)
-- [Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis-Simulation Mismatch](day-4---gate-level-simulation-blocking-vs-non-blocking-assignments-and-synthesis-simulation-mismatch)
+- [Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis Simulation Mismatch](#day-4---gate-level-simulation-blocking-vs-non-blocking-assignments-and-synthesis-simulation-mismatch)
   * [Introduction to Gate Level Simulations](#introduction-to-gate-level-simulations)
   * [Understanding Synthesis Simulation Mismatches](#understanding-synthesis-simulation-mismatches)
   * [Exploring GLS and Mismatches with Iverilog](#exploring-gls-and-mismatches-with-iverilog)
@@ -673,7 +673,7 @@ Since both D flip-flops cannot be replaced, no optimisation should be possible i
 
 As expected, no optimisations could be conducted by Yosys.
 
-## Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis-Simulation Mismatch
+## Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis Simulation Mismatch
 
 ### Introduction to Gate Level Simulations
 
