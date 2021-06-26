@@ -22,6 +22,10 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Introduction to Logic Optimisations](#introduction-to-logic-optimisations)
   * [Combinational Logic Optimisations](#combinational-logic-optimisations)
   * [Sequential Logic Optimisations](#sequential-logic-optimisations)
+- [Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis-Simulation Mismatch](day-4---gate-level-simulation-blocking-vs-non-blocking-assignments-and-synthesis-simulation-mismatch)
+  * [Introduction to Gate Level Simulations](#introduction-to-gate-level-simulations)
+  * [Understanding Synthesis Simulation Mismatches](#understanding-synthesis-simulation-mismatches)
+  * [Exploring GLS and Mismatches with Iverilog](#exploring-gls-and-mismatches-with-iverilog)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -668,3 +672,199 @@ Since both D flip-flops cannot be replaced, no optimisation should be possible i
 ![dff5 show](images/Day3/3-18.png)
 
 As expected, no optimisations could be conducted by Yosys.
+
+## Day 4 - Gate Level Simulation, Blocking vs. Non-Blocking Assignments and Synthesis-Simulation Mismatch
+
+### Introduction to Gate Level Simulations
+
+Gate Level Simulation (GLS) is the process of executing the netlist as the unit under test, instead of the source design file as we conducted up until now. We can make use of the original testbench itself to simulate the behaviour of the netlist, as the netlist is logically the same as the source RTL code.
+
+GLS is an important procedure as we must ensure that the netlist meets the design specifications. Unlike the RTL code which uses logic, the netlist utilizes physical gates to realise the same logic. These gates introduce timing concerns like propogation delays and hold times. Hence, using gate level simulations, we can ensure that the timings of the design are met as per the specifications.
+
+The flow for gate level simulations using Iverilog is shown below.
+
+<img src="images/Day4/4-0.png" width="70%">
+
+Note: For timing validation, we must run GLS with gate level models that are delay annotated (Timing Aware GLS).
+
+### Understanding Synthesis Simulation Mismatches
+
+If the netlist is a true representation of the RTL code, then why must we verify the functionality of the netlist? This is because sometimes there are mismatches between the pre-synthesis simulations and the post-synthesis simulations. This is known as synthesis simulation mismatch and can occur due to, but not limited to, the following reasons:
+
+- Missing sensitivity list
+- Blocking and non-blocking assignments
+- Non-standard verilog coding
+
+Let us look into the above issues using some example cases.
+
+**Missing Sensitivity List:**
+
+As we have learnt earlier, a simulator only updates or changes its output when it finds a change in the input. The verilog code below describes a 2:1 Multiplexer. There are 3 inputs i0, i1, and sel and 1 output y.
+
+```verilog
+module mux(input i0, input i1, input sel, output reg y);
+
+always @(sel)
+begin
+	if (sel)
+	begin
+		y = i1;
+	end
+	else 
+	begin
+		y = i0;
+            
+	end
+end
+endmodule
+```
+
+In this example the simulator checks for changes in the input sel to update the value of the output y, as the always block is evaluated only for sel. If sel were constant at 0 and i0 were to change its value, we would observe no change in the output y. This means the design would function more like a latch instead of a multiplexer. If we were to synthesize this design however, we would observe a multiplexer in our netlist instead of latch like behaviour. This would cause synthesis simulation mismatch.
+
+This can be fixed by replacing the ```always @(sel)``` line with ```always @(*)``` instead which looks for changes in any input.
+
+**Blocking and Non-Blocking Statements:**
+
+Within the ```always``` block in a verliog code, assignments can be of two types:
+
+- Blocking statements:
+  * These are assignments that make use of the ```=``` operator.
+  * Here, statements are always executed in the order that they are written.
+- Non-blocking statements:
+  * These are assignments that use the ```<=``` operator.
+  * Here, all RHS blocks are evaluated parallelly when the ```always``` block is entered, and then assigned to the LHS.
+ 
+Let's look at some examples of blocking statements and how they can cause synthesis simulation mismatches.
+ 
+Below, we have verilog code for a serial shift register with input d and output q1. As the code using blocking statements, the line ```q0 = d;``` will execute before ```q1 = q0;```. This means that the value at d will direectly be updated at q1 at every clock edge, and the design will function as a single D flip-flop instead of a 2 bit shift register.
+
+ ```verilog
+module code (input clk, input reset, input d, output reg q1);
+reg q0;
+
+always @(posedge clk,posedge reset)
+begin
+	if(reset)
+	begin
+		q0 = 1'b0;
+        	q1 = 1'b0;
+	end
+	else
+	begin
+        	q0 = d;
+		q1 = q0;
+        
+	end
+end
+endmodule
+```
+This problem will cause a mismatch in the pre-synthesis and post-synthesis simulations as the netlist will still function as a 2 bit shift register. This can be fixed by either writing the line ```q1 = q0;``` before the line ```q0 = d;``` or by using non-blocking statements instead as now both q0 and q1 would be evaluated parallelly regardless of their position. Hence, the non-blocking operator ```<=``` is preferred when using sequential designs.
+
+Let's look at another example. Here we have the verilog code for some combinational logic.
+
+```verilog
+module code (input a, input b, input c, output reg y);
+reg q0;
+
+always @(*)
+begin
+	y = q0 & c;
+	q0 = a|b;
+        
+end 
+endmodule
+```
+
+Similar to the earlier example, the AND assignment would occur before the OR assignment. This means the output y would get a delayed value of a|b, as the value of q0 would get updated after the output y is updated. This too would cause synthesis and simulation mismatches, and can be fixed by writing the line ```q0 = a|b;``` before ```y = q0 & c;```.
+
+### Exploring GLS and Mismatches with Iverilog
+
+To further understand gate level simulations and mismatches between pre-synthesis and post-synthesis simulation, let us try some examples in Iverilog.
+
+**Example 1:**
+
+Below is the verilog code for a 2:1 multiplexer using a ternary operator. Let's attempt gate level simulations on this design.
+ 
+```verilog
+module ternary_operator_mux (input i0 , input i1 , input sel , output y);
+	assign y = sel?i1:i0;
+endmodule
+```
+
+First, we must synthesize this file using Yosys and generate its netlist. We can view the graphical realisation of the same below.
+
+!(ternarymux show)[images/Day4/4-1.png]
+
+Now that we have the netlist, we can run the GLS using Iverilog by specifying the gate level models with the following command.
+
+```
+iverilog ../my_lib/verilog_model/primitives.v ../my_lib/verilog_model/sky130_fd_sc_hd.v ternary_operator_mux_net.v tb_ternary_operator_mux.v
+```
+
+![gls cmd](images/Day4/4-2.png)
+
+We can view the simulated waveforms using GTKWave and verify that the generated netlist does behave like a 2:1 multiplexer.
+
+![ternarymux wave](images/Day4/4-3.png)
+
+**Example 2:**
+
+Here, we have the verilog code for the file bad_mux.v which is available in the directory verilog_files.
+
+```verilog
+module bad_mux (input i0 , input i1 , input sel , output reg y);
+always @(sel)
+begin
+	if(sel)
+		y <= i1;
+	else 
+		y <= i0;
+end
+endmodule
+```
+
+This code is similar to one of the earlier examples discussed. It should behave more like a latch than a 2:1 multiplexer in the pre-synthesis simulation due to the missing sensitivity list. This can be confirmed by simulating the design in Iverilog and viewing its waveform.
+
+![badmux wave](images/Day4/4-4.png)
+
+As we can see, the design does not function as a multiplexer, and the output only gets updated when there is a change in the value of the input sel. However, if we try to generate its netlist using yosys, we can see below that the synthesized netlist contains a multiplexer and not a latch like circut.
+
+![badmux show](images/Day4/4-5.png)
+
+If we now run gate level simulation on the synthesized netlist and view the waveform, we should see that it functions exactly like a 2:1 multiplexer.
+
+![badmux gls show](images/Day4/4-6.png)
+
+This is known as synthesis simulation mismatch since the simulation of the design and the simulation of the synthesized netlist are different.
+
+**Example 3:**
+
+Let's take a look at an example of mismatch due to blocking statements. We shall use the verilog design file blocking_caveat.v which is available in the directory verilog_files. The code for the same is as follows.
+
+```verilog
+module blocking_caveat (input a , input b, input c, output reg d); 
+reg x;
+
+always @(*)
+begin
+	d = x & c;
+	x = a | b;
+end
+endmodule
+```
+
+Similar to an earlier example, we should get a synthesis simulation mismatch. This is because of the blocking statements used, as the output d will always be evaluated before x. If we simulate this file in Iverilog, the simulated waveform should tell the same story.
+
+![blocking wave](images/Day4/4-7.png)
+
+If we observe the instance of time highlighted by the cursor, we can see that the output y holds the value 1. However it should hold the value 0, as both the inputs a and b are 0. This means a | b should output 0, which when AND with c, should give an output of 0. But due to the blocking statements used, x actually holds a 1 tick delayed value of a | b, hence giving us an incorrect output.
+
+Now, let's try generating the netlist for this design and viewing its graphical realisation using Yosys.
+
+![blocking show](images/Day4/4-8.png)
+
+As we can see, the netlist does not include any latches to hold delayed values. It only includes an OR 2 AND gate. If we run gate lavel simulations on this netlist in Iverilog, we should see the following waveform.
+
+![blocking gls wave](images/Day4/4-9.png)
+
+Here, we can observe that the output looks at the present value of inputs, and not the past values like in the pre-synthesis simulation. Thus, we get a synthesis simulation mismatch due to blocking statements.
