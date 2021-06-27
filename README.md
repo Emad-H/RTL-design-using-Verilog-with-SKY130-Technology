@@ -26,6 +26,8 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Introduction to Gate Level Simulations](#introduction-to-gate-level-simulations)
   * [Understanding Synthesis Simulation Mismatches](#understanding-synthesis-simulation-mismatches)
   * [Exploring GLS and Mismatches with Iverilog](#exploring-gls-and-mismatches-with-iverilog)
+- [](#)
+  * [](#)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -868,3 +870,274 @@ As we can see, the netlist does not include any latches to hold delayed values. 
 ![blocking gls wave](images/Day4/4-9.png)
 
 Here, we can observe that the output looks at the present value of inputs, and not the past values like in the pre-synthesis simulation. Thus, we get a synthesis simulation mismatch due to blocking statements.
+
+## Day 5 - If, Case, For Loop and For Generate
+
+### IF Constructs
+
+Similar to regular programming languages, IF statements in verilog also follow certain priority logic. But, verilog is a hardware description language, so these conditions directly affect the physical gates synthesized. Incorrect usage of IF conditions can cause certain optimisation issues in the synthesis of a design. 
+
+Let's look at a template for an IF block. Here we have an output y that gets assigned to certain statements bases on IF conditionals.
+
+```verilog
+if (cond_1)
+begin
+	y = statement_1;
+end
+else if (cond_2)
+begin
+	y = statement_2;
+end
+else if (cond_3)
+begin
+	y = statement_3;
+end
+else
+begin
+	y = statement_4;
+end
+```
+
+In this code block, we would assume that the synthesized netlist might contain a single multiplexer. However, the first IF statement holds the highest priority in this block of code. This means that if cond_1 is satisfied, we do not enter the next IF statements. Thus we get a ladder like multiplexer structure in the final design instead of a single multiplexer, which is shown below.
+
+![if block](images/Day5/5-0.png)
+
+Another issue can arise from incorrect IF statements when we use incomplete IF statements. Incomplete IF statements occur when IF blocks do not end with an accompanying else block. This is seen in the verilog code block below.
+
+```verilog
+if (cond_1)
+begin
+	y = statement_1;
+end
+else if (cond_2)
+begin
+	y = statement_2;
+end
+
+...
+```
+
+Here, we have not specified what happens if both cond_1 and cond_2 are false. This is an incomplete IF statement. When the synthesizer comes accross this, it will add an Inferred Latch in the final synthesis. This can be seen in the diagram below.
+
+![incomplete if](images/Day5/5-1.png)
+
+Since the tool does not know what to do when both conditions are false, it will infer a latch to store the latest value of the output. When both conditions are false, the stored value in the latch will be driven to the output.
+
+We must always take into consideration what hardware will our verilog code directly be translated to. Sometimes however, incomplete IF constructs are perfectly fine in cases such as counters where latches must store the previous output as the input when no enable condition is found.
+
+### CASE Constructs
+
+Let's look at the following verilog code block. Here, the inferred hardware would be a 4:1 multiplexer. Note that CASE statements do not have prioiry logic like IF statements.
+
+```verilog
+always @(*)
+begin
+	case(sel)
+		2'b00: begin
+		       y = statement_1;
+		       end
+		2'b01: begin
+		       y = statement_2;
+		       end
+		2'b10: begin
+		       y = statement_3;
+		       end
+		2'b11: begin
+		       y = statement_4;
+		       end
+	endcase
+end
+```
+
+Some caveats with using CASE statements:
+
+**1. Incomplete CASE.**
+
+```verilog
+always @(*)
+begin
+	case(sel)
+		2'b00: begin
+		       y = statement_1;
+		       end
+		2'b01: begin
+		       y = statement_2;
+		       end
+	endcase
+end
+```
+
+This occurs when some cases are not specified inside the CASE block. For example, if the 2'b10 and 2'b11 cases were not mentioned, the tool would synthesize inferred latches at the 3rd and 4th inputs of the multiplexer. To avoid this, we can make use of the ```default:``` case inside the CASE block so that the tool knows what to do when a case that is not specified occurs.
+
+**2. Partial assignments**
+
+```verilog
+always @(*)
+begin
+	case(sel)
+		2'b00: begin
+		       x = a;
+		       y = b;
+		       end
+		2'b01: begin
+		       x = c;
+		       end
+	      default: begin
+	      	       x = d;
+		       y = d;
+		       end
+	endcase
+end
+```
+
+In the above example, we have 2 outputs x and y. This will create two 4:1 multiplexers, one for each output. If we look at case 2'b01, we have specified the value of x for this case, but not the value of y. We might assume that it is okay to do so, as a default case is specified for both the outputs, and if we don't directly specify the value of y, the tool will imply the default case. This, however, is incorrect. In partial assignments such as this, the tool will infer a latch at the 2nd input for multiplexer y as no value is specified.
+
+**3. Overlapping cases**
+
+```verilog
+always @(*)
+begin
+	case(sel)
+		2'b00: begin;
+		       y = a;
+		       end
+		2'b01: begin
+		       y = b;
+		       end
+		2'b10: begin
+		       y = c;
+		       end
+		2'b1?: begin
+		       y = d;
+		       end
+	endcase
+end
+```
+
+In the above code block, 2'b1? specifies that the LSB can be either 0 or 1. This means when the sel input is holding a value 3, conditions 3 and 4 both hold true. If we used an IF condition here, due to priority logic, condition 4 would be ignored when condition 3 is met. However, in the CASE statement, both conditions would hold true as there is no priority logic, and we would get an unpreidctable output. This is known as an overlapping case.
+
+### Synthesizing Incorrect IF and CASE constructs
+
+**Example 1:**
+
+Below is the file titled incomp_if.v, and can be found in the directory verilog_files.
+
+```verilog
+module incomp_if (input i0 , input i1 , input i2 , output reg y);
+always @ (*)
+begin
+	if(i0)
+		y <= i1;
+end
+endmodule
+```
+
+The code contains an incomplete IF statement as no else condition is mentioned. As we have learnt, we should see latch like behaviour in the simulation. Let's simulate this design using the following commands.
+
+![incif cmd](images/Day5/5-3.png)
+
+![incif wave](images/Day5/5-4.png)
+
+From the above waveform, we can observe that when i0 vecomes low, the output y holds the previous value of input i1. This shows latch like behaviour, and can further be detailed by looking at the synthesis output using yosys.
+
+![incif show](images/Day5/5-5.png)
+
+As we can see, an inferred latch is created in the synthesized netlist.
+
+**Example 2:**
+
+Let's look at a similar example of incomp_if2.v below.
+
+```verilog
+module incomp_if2 (input i0 , input i1 , input i2 , input i3, output reg y);
+always @ (*)
+begin
+	if(i0)
+		y <= i1;
+	else if (i2)
+		y <= i3;
+
+end
+endmodule
+```
+
+The above code contains an incomplete IF statement as well. Here, we have 2 inputs i1 and i3, as well as 2 conditional inputs i0 and i2. As we do not specify what happens to the output y when both i0 and i2 go low, we will get an issues in the final synthesis. Let us look at its simulated waveform.
+
+![incif2 wave](images/Day5/5-6.png)
+
+As you can see, when both i0 and i2 are low, the output y depicts latch like behaviour. This can be verified by checking the graphical realisation of the Yosys sysnthesis below. Yosys synthesized a multiplexer as well as a latch with some combinational logic for its enable pin.
+
+![incif2 show](images/Day5/5-7.png)
+
+**Example 3:**
+
+```verilog
+module incomp_case (input i0 , input i1 , input i2 , input [1:0] sel, output reg y);
+always @ (*)
+begin
+	case(sel)
+		2'b00 : y = i0;
+		2'b01 : y = i1;
+	endcase
+end
+endmodule
+```
+
+**Example 4:**
+
+```verilog
+module comp_case (input i0 , input i1 , input i2 , input [1:0] sel, output reg y);
+always @ (*)
+begin
+	case(sel)
+		2'b00 : y = i0;
+		2'b01 : y = i1;
+		default : y = i2;
+	endcase
+end
+endmodule
+```
+follows i2 at default case
+
+**Example 5:**
+
+```verilog
+
+module partial_case_assign (input i0 , input i1 , input i2 , input [1:0] sel, output reg y , output reg x);
+always @ (*)
+begin
+	case(sel)
+		2'b00 : begin
+			y = i0;
+			x = i2;
+			end
+		2'b01 : y = i1;
+		default : begin
+		           x = i1;
+			   y = i2;
+			  end
+	endcase
+end
+endmodule
+```
+
+**Example 6:**
+
+```verilog
+  
+module bad_case (input i0 , input i1, input i2, input i3 , input [1:0] sel, output reg y);
+always @(*)
+begin
+	case(sel)
+		2'b00: y = i0;
+		2'b01: y = i1;
+		2'b10: y = i2;
+		2'b1?: y = i3;
+		//2'b11: y = i3;
+	endcase
+end
+
+endmodule
+```
+
+synth sim mismatch.
