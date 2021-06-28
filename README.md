@@ -926,7 +926,7 @@ end
 
 Here, we have not specified what happens if both cond_1 and cond_2 are false. This is an incomplete IF statement. When the synthesizer comes accross this, it will add an Inferred Latch in the final synthesis. This can be seen in the diagram below.
 
-![incomplete if](images/Day5/5-1.png)
+![incomplete if](images/Day5/5-2.png)
 
 Since the tool does not know what to do when both conditions are false, it will infer a latch to store the latest value of the output. When both conditions are false, the stored value in the latch will be driven to the output.
 
