@@ -26,8 +26,14 @@ A 5 day cloud based virtual training workshop conducted by VSD-IAT from 23<sup>r
   * [Introduction to Gate Level Simulations](#introduction-to-gate-level-simulations)
   * [Understanding Synthesis Simulation Mismatches](#understanding-synthesis-simulation-mismatches)
   * [Exploring GLS and Mismatches with Iverilog](#exploring-gls-and-mismatches-with-iverilog)
-- [](#)
-  * [](#)
+- [Day 5 - If, Case, For Loop and For Generate](#day-5---if-case-for-loop-and-for-generate)
+  * [IF Constructs](#if-constructs)
+  * [CASE Constructs](#case-constructs)
+  * [Synthesizing Incorrect IF and CASE Constructs](#synthesizing-incorrect-if-and-case-constructs)
+  * [Introduction to Looping Constructs](#introduction-to-looping-constructs)
+  * [Understanding FOR Loops](#understanding-for-loops)
+  * [FOR Generate and its Uses](#for-generate-and-its-uses)
+- [Acknowledgements](#acknowledgements)
 
 ## Day 1 - Introduction to Verilog RTL Design and Synthesis
 
@@ -83,7 +89,8 @@ endmodule
 **Testbench Setup** <br>
 
 <img src="images/Day1/1-0.png" width="70%">
-Note: The design may have 1 or more primary inputs and 1 or more primary outputs, however a testbench does not have any primary inputs or outputs. <br>
+
+>Note: The design may have 1 or more primary inputs and 1 or more primary outputs, however a testbench does not have any primary inputs or outputs. <br>
 
 <br>**Simulator:** <br>
 It is the tool used to simulate the design, and check for its adherence to the specifications. They can be used to apply the test bench to the design. The simulator tool used for this workshop is Icarus Verilog (Iverilog). A simulator works by looking for changes on the input signals, and evaluating the output signals only when a change in value is observed on the input. Below is the simulation flow for Iverilog.
@@ -182,7 +189,7 @@ T<sub>HOLD_B</sub> < T<sub>CQ_A</sub> + T<sub>COMBI</sub> <br>
 
 Thus, we need fast cells to meet performance requirements as well as slow cells to meet hold times in the .lib collection. To pick appropriate cells, the user must offer "constraints" to the synthesizer.
 
-Note: As the primary load in a digital circuit is capacitance, the charge/discharge times of the capacitor decides cell delay. To discharge capacitors fast we need transistors capable of sourcing more current, thus needing wider transistors with more area and power requirements. While slower cells need narrow transitors with less area and power requirements.
+>Note: As the primary load in a digital circuit is capacitance, the charge/discharge times of the capacitor decides cell delay. To discharge capacitors fast we need transistors capable of sourcing more current, thus needing wider transistors with more area and power requirements. While slower cells need narrow transitors with less area and power requirements.
 
 ### Exploring Yosys and SKY130PDKs
 
@@ -266,9 +273,9 @@ If we view it graphically using the ```show``` command, we can observe only stan
 
 ![flat image](images/Day2/1-8.png)
 
-Note: From a multiple module design file, it is possible to just synthesize a single sub module. This is done using the command ```synth -top sub_module_name```, and is known as Sub Module level Synthesis. This is used when, 
-- we have multiple instances of the same module and just want to synthesize it once, then replicate it however many times.
-- we are using a divide and conquer approach (used in massive designs when the tool does not do an appropriate or well optmised job).
+>Note: From a multiple module design file, it is possible to just synthesize a single sub module. This is done using the command ```synth -top sub_module_name```, and is known as Sub Module level Synthesis. This is used when, 
+>- we have multiple instances of the same module and just want to synthesize it once, then replicate it however many times.
+>- we are using a divide and conquer approach (used in massive designs when the tool does not do an appropriate or well optmised job).
 
 ### Flop Coding Styles
 
@@ -283,7 +290,7 @@ Flip-flops come in various types. These are mainly:
 
 To further understand understand the different flop styles, let's look at 3 D flip-flops available to us in the directory verilog_files.
 
-Note: For synthesizing designs involving D flip-flops in Yosys, we must use the command ```dfflibmap -liberty dff_library_filepath``` which in our case is ```dfflibmap -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib```. This command is used to read the dff standard cells as some libraries may have seperate .lib files for these. The command must be issues after ```synth``` and before ```abc```.
+> Note: For synthesizing designs involving D flip-flops in Yosys, we must use the command ```dfflibmap -liberty dff_library_filepath``` which in our case is ```dfflibmap -liberty ../my_lib/lib/sky130_fd_sc_hd__tt_025C_1v80.lib```. This command is used to read the dff standard cells as some libraries may have seperate .lib files for these. The command must be issues after ```synth``` and before ```abc```.
 
 **1. Rising edge D Flip-flop with asynchronous reset**
 
@@ -687,7 +694,7 @@ The flow for gate level simulations using Iverilog is shown below.
 
 <img src="images/Day4/4-0.png" width="70%">
 
-Note: For timing validation, we must run GLS with gate level models that are delay annotated (Timing Aware GLS).
+>Note: For timing validation, we must run GLS with gate level models that are delay annotated (Timing Aware GLS).
 
 ### Understanding Synthesis Simulation Mismatches
 
@@ -875,9 +882,9 @@ Here, we can observe that the output looks at the present value of inputs, and n
 
 ### IF Constructs
 
-Similar to regular programming languages, IF statements in verilog also follow certain priority logic. But, verilog is a hardware description language, so these conditions directly affect the physical gates synthesized. Incorrect usage of IF conditions can cause certain optimisation issues in the synthesis of a design. 
+Similar to regular programming languages, ```if``` statements in verilog also follow certain priority logic. But, verilog is a hardware description language, so these conditions directly affect the physical gates synthesized. Incorrect usage of ```if``` conditions can cause certain optimisation issues in the synthesis of a design. 
 
-Let's look at a template for an IF block. Here we have an output y that gets assigned to certain statements bases on IF conditionals.
+Let's look at a template for an ```if``` block. Here we have an output y that gets assigned to certain statements bases on ```if``` conditionals.
 
 ```verilog
 if (cond_1)
@@ -898,11 +905,11 @@ begin
 end
 ```
 
-In this code block, we would assume that the synthesized netlist might contain a single multiplexer. However, the first IF statement holds the highest priority in this block of code. This means that if cond_1 is satisfied, we do not enter the next IF statements. Thus we get a ladder like multiplexer structure in the final design instead of a single multiplexer, which is shown below.
+In this code block, we would assume that the synthesized netlist might contain a single multiplexer. However, the first ```if``` statement holds the highest priority in this block of code. This means that if cond_1 is satisfied, we do not enter the next ```if``` statements. Thus we get a ladder like multiplexer structure in the final design instead of a single multiplexer, which is shown below.
 
 ![if block](images/Day5/5-0.png)
 
-Another issue can arise from incorrect IF statements when we use incomplete IF statements. Incomplete IF statements occur when IF blocks do not end with an accompanying else block. This is seen in the verilog code block below.
+Another issue that can arise with ```if``` statements is when we leave them incomplete. Incomplete ```if``` statements occur when ```if``` blocks do not end with an accompanying ```else``` block. This is seen in the verilog code block below.
 
 ```verilog
 if (cond_1)
@@ -923,11 +930,11 @@ Here, we have not specified what happens if both cond_1 and cond_2 are false. Th
 
 Since the tool does not know what to do when both conditions are false, it will infer a latch to store the latest value of the output. When both conditions are false, the stored value in the latch will be driven to the output.
 
-We must always take into consideration what hardware will our verilog code directly be translated to. Sometimes however, incomplete IF constructs are perfectly fine in cases such as counters where latches must store the previous output as the input when no enable condition is found.
+We must always take into consideration what hardware will our verilog code directly be translated to. Sometimes however, incomplete ```if``` constructs are perfectly fine in cases such as counters where latches must store the previous output as the input when no enable condition is found.
 
 ### CASE Constructs
 
-Let's look at the following verilog code block. Here, the inferred hardware would be a 4:1 multiplexer. Note that CASE statements do not have prioiry logic like IF statements.
+Let's look at the following verilog code block. Here, the inferred hardware would be a 4:1 multiplexer. Note that ```case``` statements do not have prioiry logic like ```if``` statements.
 
 ```verilog
 always @(*)
@@ -949,7 +956,7 @@ begin
 end
 ```
 
-Some caveats with using CASE statements:
+Some caveats with using ```case``` statements:
 
 **1. Incomplete CASE.**
 
@@ -967,7 +974,7 @@ begin
 end
 ```
 
-This occurs when some cases are not specified inside the CASE block. For example, if the 2'b10 and 2'b11 cases were not mentioned, the tool would synthesize inferred latches at the 3rd and 4th inputs of the multiplexer. To avoid this, we can make use of the ```default:``` case inside the CASE block so that the tool knows what to do when a case that is not specified occurs.
+This occurs when some cases are not specified inside the ```case``` block. For example, if the 2'b10 and 2'b11 cases were not mentioned, the tool would synthesize inferred latches at the 3rd and 4th inputs of the multiplexer. To avoid this, we can make use of the ```default:``` case inside the ```case``` block so that the tool knows what to do when a case that is not specified occurs.
 
 **2. Partial assignments**
 
@@ -1014,9 +1021,9 @@ begin
 end
 ```
 
-In the above code block, 2'b1? specifies that the LSB can be either 0 or 1. This means when the sel input is holding a value 3, conditions 3 and 4 both hold true. If we used an IF condition here, due to priority logic, condition 4 would be ignored when condition 3 is met. However, in the CASE statement, both conditions would hold true as there is no priority logic, and we would get an unpreidctable output. This is known as an overlapping case.
+In the above code block, 2'b1? specifies that the LSB can be either 0 or 1. This means when the sel input is holding a value 3, conditions 3 and 4 both hold true. If we used an ```if``` condition here, due to priority logic, condition 4 would be ignored when condition 3 is met. However, in the ```case``` statement, both conditions would hold true as there is no priority logic, and we would get an unpreidctable output. This is known as an overlapping case.
 
-### Synthesizing Incorrect IF and CASE constructs
+### Synthesizing Incorrect IF and CASE Constructs
 
 **Example 1:**
 
@@ -1032,7 +1039,7 @@ end
 endmodule
 ```
 
-The code contains an incomplete IF statement as no else condition is mentioned. As we have learnt, we should see latch like behaviour in the simulation. Let's simulate this design using the following commands.
+The code contains an incomplete ```if``` statement as no else condition is mentioned. As we have learnt, we should see latch like behaviour in the simulation. Let's simulate this design using the following commands.
 
 ![incif cmd](images/Day5/5-3.png)
 
@@ -1071,6 +1078,8 @@ As you can see, when both i0 and i2 are low, the output y depicts latch like beh
 
 **Example 3:**
 
+Now let us looks at some implementations of ```case``` statements. We have the file incomp_case.v below.
+
 ```verilog
 module incomp_case (input i0 , input i1 , input i2 , input [1:0] sel, output reg y);
 always @ (*)
@@ -1083,7 +1092,19 @@ end
 endmodule
 ```
 
+This code clearly has an incomplete CASE statement as the cases for 2'b10 and 2'b11 are missing. As we have seen before, missing cases cause the tool to synthesize latches at the input. Let us take a look at the simulated waveform first for this verilog code.
+
+![inccase wave](images/Day5/5-8.png)
+
+We can see that the output y at sel values of 10 or 11 portrays latch like behaviour. This can be confirmed once we look at the Yosys realisation of this design.
+
+![inccase show](images/Day5/5-9.png)
+
+A latch gets inferred for the output y, and the enable for the latch depends on the values of the input sel. Hence, incomplete ```case``` statements are bad coding practice.
+
 **Example 4:**
+
+To correct the above mistake, we must specify the ```default``` case. This is done in the example below. We are using the comp_case.v file.
 
 ```verilog
 module comp_case (input i0 , input i1 , input i2 , input [1:0] sel, output reg y);
@@ -1097,12 +1118,20 @@ begin
 end
 endmodule
 ```
-follows i2 at default case
+
+Even though we have not mentioned the cases 2'b10 and 2'b11, the tool will default to assigning y to the input i2 under these conditions. This can be verified by the simulated waveform for the same below.
+
+![compcase wave](images/Day5/5-10.png)
+
+As you can see above, the output y follows i2 when the value of sel is either 10 or 11. As we have mentioned the default case, there should not be any latches inferred by Yosys in the synthesized netlist. This can be seen below.
+
+![inccase show](images/Day5/5-11.png)
 
 **Example 5:**
 
-```verilog
+Next, let's look at what happens when we only have partial assignments inside the  block. We shall use the file partial_case_assign.v for this purpose.
 
+```verilog
 module partial_case_assign (input i0 , input i1 , input i2 , input [1:0] sel, output reg y , output reg x);
 always @ (*)
 begin
@@ -1113,18 +1142,25 @@ begin
 			end
 		2'b01 : y = i1;
 		default : begin
-		           x = i1;
-			   y = i2;
+		          x = i1;
+			  y = i2;
 			  end
 	endcase
 end
 endmodule
 ```
 
+Here, even though we have specified a default case, no values are assigned to the output x for the case 2'b01. This will cause latches to be inferred for the output x. This can be confirmed by synthesizing this design using Yosys and viewing its graphical realisation.
+
+![partcase show](images/Day5/5-12.png)
+
+As expected, we have a latch at output x, with its enable condition dependant on the value of the sel lines. So, partial assignments inside the ```case``` block make for bad coding practice as well.
+
 **Example 6:**
 
+The following example employs overlapping cases inside its ```case``` block. Let's see how this can cause errors. The file used is bad_case.v, available in the verilog_files directory.
+
 ```verilog
-  
 module bad_case (input i0 , input i1, input i2, input i3 , input [1:0] sel, output reg y);
 always @(*)
 begin
@@ -1136,11 +1172,20 @@ begin
 		//2'b11: y = i3;
 	endcase
 end
-
 endmodule
 ```
 
-synth sim mismatch.
+In this design, the case 2'b1? specifies that it can mean both 2'b10 and 2'b11. Hence, when the sel input attains the value 10, we have 2 cases which hold true for this condition. As ```case``` deos not use any priority logic, the output will be unpredictable at this value. Let's look the simulated waveform for this design.
+
+![badcase show](images/Day5/5-13.png)
+
+The waveform whows unpredictable and latch like behaviour. Let us try to syntheize this design in Yosys and see what happens.
+
+![badcase show](images/Day5/5-14.png)
+
+In the netlist realisation we see no inferred latches! Instead, we find a fully functioning 4:1 multiplexer. This can be verified by conducting gate level simulation on the generated netlist below. As seen, we get a mismatch between the pre-synthesis and post-synthesis simulations.
+
+![badcase gls](images/Day5/5-15.png)
 
 ### Introduction to Looping Constructs
 
@@ -1155,14 +1200,46 @@ There are two distinct uses of FOR loops in verilog design, as follows.
   * Only used outside the ```always``` block
   * Used for instantiating hardware
 
-### FOR 
-(evaluating multiple assignments)
+### Understanding FOR Loops 
 
-### FOR Generate
+```for``` loops are extremely handy when we want to evaluate multiple assignments within the ```always``` block. If we want to write the code for a 4:1 multiplexer, we can easily do so using a either four ```if``` blocks or using a ```case``` block with 4 cases. However, this approach has very poor scalability. If we wanted to create a 256:1 multiplexer, we would require to write out 256 lines of conditionals and assignmemnts to outline its functionality. Instead, we can use ```for``` loops as follows to simplify this code for better readability, and lesser time and effort invested.
 
-examples
+```verilog
+integer i;
+always @(*)
+begin
+	for (i = 0, i < 256, i = i + 1) begin
+		if (i == sel)
+			y = in[i];
+		end
+	end
+end
+```
 
-ex 1:
+Now, we have easily created a 256:1 multiplexer in just 5 lines of code within the ```always``` block; asuuming we have already specified in[255:0] as our input bus. This code can be infinitely scaled up by just replacing the condition ```i < 256``` with the desired specification for our multiplexer.
+
+Similarly, we can use this approach for creating wide demultiplexers as well.
+
+```verilog
+integer i
+always @(*)
+begin
+	op_bus[15:0] = 16b'0;
+	for (i = 0; i < 16; i = i + 1) begin
+		if (i == sel)
+			op_bus[i] = inp;
+		end
+	end
+end
+```
+
+Here, we have created a 16:1 demultiplexer easily using ```for``` loops within the ```always``` block. The line op_bus[15:0] specifies our output and inp specifies our input wire. We must, however, assign all outputs to low whenever a new value of sel is found. We make use of the power of blocking statements to do this. If we do not specify this, the design will not function as a true demultiplexer.
+
+Let us further understand how to use ```for``` loops in our designs by looking at the examples below.
+
+**Example 1:**
+
+Below is the file mux_generate.v, found under the verilog_files directory.
 
 ```verilog
 module mux_generate (input i0 , input i1, input i2 , input i3 , input [1:0] sel  , output reg y);
@@ -1180,10 +1257,176 @@ end
 endmodule
 ```
 
-instantiate fa in loop
+The above design specifies a 4:1 multiplexer, written using ```for``` loops. We have 4 inputs which get assigned to a wire i_int. This is done to allow us to call a specific input easily in the code. Let's simulate this design and view the waveform obtained.
 
-Rules for addition
+![muxgen wave](images/Day5/5-16.png)
 
-N and N bit number --> Sum will be N+1 bit
-N and M bit number --> Sum will be Max(N,M)+1 bit
+As we can see, the design clearly functions as a 4:1 multiplexer. Let us synthesize this design into standard cells using Yosys, and confirm the functionality of our generated netlist using gate level simulation.
 
+![muxgen show](images/Day5/5-17.png)
+
+![muxgen gls](images/Day5/5-18.png)
+
+**Example 2:**
+
+Let us design a 8:1 demultiplexer using simple assignments within a ```case``` block, without the use of ```for``` loop.
+
+```verilog
+module demux_case (output o0 , output o1, output o2 , output o3, output o4, output o5, output o6 , output o7 , input [2:0] sel  , input i);
+reg [7:0]y_int;
+assign {o7,o6,o5,o4,o3,o2,o1,o0} = y_int;
+integer k;
+
+always @ (*)
+begin
+	y_int = 8'b0;
+	case(sel)
+		3'b000 : y_int[0] = i;
+		3'b001 : y_int[1] = i;
+		3'b010 : y_int[2] = i;
+		3'b011 : y_int[3] = i;
+		3'b100 : y_int[4] = i;
+		3'b101 : y_int[5] = i;
+		3'b110 : y_int[6] = i;
+		3'b111 : y_int[7] = i;
+	endcase
+end
+endmodule
+```
+
+If we simulate the above design, we get the following waveform through GTKWave.
+
+![demuxcase wave](images/Day5/5-19.png)
+
+Above, we can see that dependng on the value of sel, the corresponding output follows the input i. This confirms demultiplexer behaviour. If we synthesize the netlist for this design in Yosys and run gate level simulations on it, we get the following results.
+
+![demuxcase show](images/Day5/5-20.png)
+
+![demuxcase gls](images/Day5/5-21.png)
+
+From the above results, the GLS matches the design simulation, and we get a 8:1 demultiplexer. However, this coding style has poor scalabilty. Let's try to amend this in the example below.
+
+**Example 3:**
+
+Here, we are going to use a ```for``` loop to specify the functionality of our 8:1 demultiplexer as follows.
+
+```verilog
+module demux_generate (output o0 , output o1, output o2 , output o3, output o4, output o5, output o6 , output o7 , input [2:0] sel  , input i);
+reg [7:0]y_int;
+assign {o7,o6,o5,o4,o3,o2,o1,o0} = y_int;
+integer k;
+
+always @ (*)
+begin
+	y_int = 8'b0;
+	for(k = 0; k < 8; k++) begin
+		if(k == sel)
+			y_int[k] = i;
+	end
+end
+endmodule
+```
+
+Compared to the earlier example, this style of coding makes the design easy to read and understand, as well as scale well. Let's confirm if this functions as expected by viewing its simulated waveform.
+
+![demuxgen wave](images/Day5/5-22.png)
+
+It's clearly seen that we obtain the same waveform as in the earlier example. The synthesis and GLS of this code giives the following results.
+
+![demuxgen show](images/Day5/5-23.png)
+
+![demuxgen gls](images/Day5/5-24.png)
+
+The synthesized netlist and GLS waveforms matches with that of the file demux_case.v, which shows that using ```for``` loops instead of simple assignments yelds the same results in a shorter amount of code.
+
+### FOR Generate and its Uses
+
+FOR Generate is very useful when we must create multiple instances of the same hardware. For example, if we want to generate 8 AND gates in our design, we would normally do the following.
+
+```verilog
+and u_and0(a.(in1[0]), .b(in2[0]), .c(y[0]));
+and u_and1(a.(in1[1]), .b(in2[1]), .c(y[1]));
+and u_and2(a.(in1[2]), .b(in2[2]), .c(y[2]));
+and u_and3(a.(in1[3]), .b(in2[3]), .c(y[3]));
+and u_and4(a.(in1[4]), .b(in2[4]), .c(y[4]));
+and u_and5(a.(in1[5]), .b(in2[5]), .c(y[5]));
+and u_and6(a.(in1[6]), .b(in2[6]), .c(y[6]));
+and u_and7(a.(in1[7]), .b(in2[7]), .c(y[7]));
+```
+
+This is a tedious approach, especially if we want to instantiate a large number of the same hardware. Instead, we can use ```generate for``` as follows.
+
+```verilog
+genvar i
+generate
+	for (i = 0; i < 8; i = i + 1) begin
+		and u_and(.a(in1[i]), .b(in2[i]), .c(y[i]));
+	end
+endgenerate
+```
+
+Above, we have replicated 8 instances of a 2 input AND gate using FOR Generate. This can be infinitely scaled up for any number of replications. 
+
+>Note: We must use the ```generate for``` outside the ```always``` block. Also, just like ```generate for```, ```generate if``` is also possible.
+
+Let us look at an example of a 8 bit Ripple Carry Adder (RCA). An RCA is nothing but Full Adders tied in series, with the carry out of the previous full adder presented as the carry in bit of the next full adder in the chain. Hence, we can make use of ```generate for``` to instantiate every full adder in the design, as they are all the same pieces of hardware.
+
+For this example, we make use of the file rca.v which holds the code for the ripple carry adder.
+
+```verilog
+  
+module rca (input [7:0] num1 , input [7:0] num2 , output [8:0] sum);
+wire [7:0] int_sum;
+wire [7:0]int_co;
+
+genvar i;
+generate
+	for (i = 1 ; i < 8; i=i+1) begin
+		fa u_fa_1 (.a(num1[i]),.b(num2[i]),.c(int_co[i-1]),.co(int_co[i]),.sum(int_sum[i]));
+	end
+
+endgenerate
+fa u_fa_0 (.a(num1[0]),.b(num2[0]),.c(1'b0),.co(int_co[0]),.sum(int_sum[0]));
+
+
+assign sum[7:0] = int_sum;
+assign sum[8] = int_co[7];
+endmodule
+```
+
+Here, fa references another verilog design file holding the code for the full adder submodules. This is shown below, from the fa.v file.
+
+```verilog
+module fa (input a , input b , input c, output co , output sum);
+	assign {co,sum}  = a + b + c ;
+endmodule
+```
+
+In the RCA verilog code, we instantiate fa in a loop using ```generate for``` outside the ```always``` block. However, the first instance of the full adder must be written outside the loop as its carry in input is tied to low, unlike that of every other full adder.
+
+>Note: Rules for addition
+>
+>N and N bit number --> Sum will be N + 1 bits <br>
+>N and M bit number --> Sum will be max(N, M) + 1 bits
+
+Now, let us simulate this design in Iverilog and view its waveform with GTKWave. As the rca design references the file fa.v, we must specify it in our commands as follows.
+
+```
+iverilog fa.v rca.v tb_rca.v
+./a.out
+gtkwave tb_rca.v
+```
+
+The resulting waveform is shown below.
+
+![rca wave](images/Day5/5-25.png)
+
+If we observe the above result, we can see that the design successfully performs 8 bit addition. Similarly, let's synthesize the design and observe the graphical realisation of the netlist in Yosys.
+
+![rca show](images/Day5/5-26.png)
+
+## Acknowledgements
+
+- [Kunal Gosh](https://github.com/kunalg123)
+- [Shon Taware](https://github.com/ShonTaware)
+- [VSD-IAT](https://vsdiat.com/)
